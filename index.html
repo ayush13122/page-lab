@@ -567,10 +567,22 @@
 
     .cell-fault {
       background: rgba(248, 113, 113, 0.12);
+      animation: flash-fault 0.5s ease;
+    }
+
+    @keyframes flash-fault {
+        from { background-color: rgba(248, 113, 113, 0.3); }
+        to { background-color: rgba(248, 113, 113, 0.12); }
     }
 
     .cell-hit {
       background: rgba(34, 197, 94, 0.08);
+      animation: flash-hit 0.5s ease;
+    }
+
+    @keyframes flash-hit {
+        from { background-color: rgba(34, 197, 94, 0.3); }
+        to { background-color: rgba(34, 197, 94, 0.08); }
     }
 
     .tag-hit,
@@ -805,9 +817,9 @@
         <div class="hero-orb"></div>
         <div class="hero-card-grid">
           <div class="hero-chip">
-            <div class="hero-chip-title">Sample reference string</div>
+            <div class="hero-chip-title">Sample ref string</div>
             <div class="hero-chip-value">7 0 1 2 0 3 0 4 2 3 0 3 2</div>
-            <div class="hero-chip-tag">Try it in the simulator</div>
+            <div class="hero-chip-tag">Default input string</div>
           </div>
           <div class="hero-chip">
             <div class="hero-chip-title">Common OS exam topic</div>
@@ -841,4 +853,527 @@
 
         <div class="form-grid">
           <div class="field">
-            <label for="fr
+            <label for="num-frames">Number of Frames (M):</label>
+            <input type="number" id="num-frames" value="3" min="1" max="10" />
+            <span class="hint">Physical memory size, usually 3 to 7 frames.</span>
+          </div>
+
+          <div class="field">
+            <label for="reference-string">Reference String (P, separated by spaces/commas/newlines):</label>
+            <textarea id="reference-string">7 0 1 2 0 3 0 4 2 3 0 3 2</textarea>
+            <span class="hint">Enter page numbers. Example: 7 0 1 2 0 3 0 4 2 3 0 3 2</span>
+          </div>
+
+          <div class="field">
+            <label for="algorithm">Page Replacement Algorithm:</label>
+            <select id="algorithm">
+              <option value="FIFO">FIFO (First-In, First-Out)</option>
+              <option value="LRU">LRU (Least Recently Used)</option>
+              <option value="OPTIMAL">Optimal (MIN)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-primary" onclick="simulate()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Run Simulation
+          </button>
+          <button class="btn-outline" onclick="loadSample()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Load Sample
+          </button>
+          <button class="btn-danger" onclick="clearResults()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+            Clear
+          </button>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-main">
+            <span id="status-chip-algo" class="status-chip">Algorithm: N/A</span>
+            <span id="status-chip-frames" class="status-chip">Frames: 0</span>
+            <span id="status-chip-requests" class="status-chip">Requests: 0</span>
+          </div>
+          <div id="error-message" class="error-message"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: METRICS PANEL -->
+      <div class="panel">
+        <div class="panel-title">
+          Performance Metrics
+          <span class="pill-label">Results • Efficiency</span>
+        </div>
+        <p class="panel-subtitle">
+          Summary of simulation results, including faults, hits, and efficiency ratio.
+        </p>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Total Page Faults</span>
+            <span id="metric-faults" class="metric-value">0</span>
+            <span class="metric-pill metric-pill-bad">Faults (lower is better)</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Total Page Hits</span>
+            <span id="metric-hits" class="metric-value">0</span>
+            <span class="metric-pill metric-pill-good">Hits (higher is better)</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Hit Ratio</span>
+            <span id="metric-hit-ratio" class="metric-value">0.00%</span>
+            <span class="metric-pill metric-pill-good">Efficiency Score</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Miss Ratio</span>
+            <span id="metric-miss-ratio" class="metric-value">0.00%</span>
+            <span class="metric-pill metric-pill-bad">Inefficiency Score</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM: VISUALIZATION -->
+    <div class="panel">
+      <div class="panel-title">
+        Visualization Timeline
+        <span class="pill-label">Frame History • Page Faults</span>
+      </div>
+      <p class="panel-subtitle">
+        See the memory state after each page request (column). Page faults are highlighted in red.
+      </p>
+      <div class="visual-panel">
+        <div class="visual-header">
+            <span class="visual-header-title" id="visualization-title">Algorithm: N/A | Frames: 0</span>
+            <span class="visual-ref-string" id="reference-string-display">Reference String: N/A</span>
+        </div>
+        <div id="visualization-table-container">
+            <p style="text-align: center; color: var(--muted); padding: 20px;">Run a simulation to see the results here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS SECTION (For Context) -->
+    <section id="how-it-works" class="section">
+        <div class="section-title">How It Works: Page Replacement Algorithms</div>
+        <p class="section-subtitle">A quick refresher on the logic applied by each simulation method.</p>
+
+        <div class="algo-grid">
+            <div class="algo-card">
+                <div class="algo-title">FIFO (First-In, First-Out)</div>
+                <span class="algo-pill">Simple Queue Logic</span>
+                <p>The operating system keeps track of all pages in memory in a queue. The page that has been in memory the longest is replaced.</p>
+                <ul class="algo-list">
+                    <li>Easy to implement and understand.</li>
+                    <li>Ignores the actual usage frequency of the pages.</li>
+                    <li>Suffers from Belady's Anomaly (faults can increase with more frames).</li>
+                </ul>
+            </div>
+            <div class="algo-card">
+                <div class="algo-title">LRU (Least Recently Used)</div>
+                <span class="algo-pill">Temporal Locality</span>
+                <p>Pages that have been heavily used in the past will probably be used again soon. The page that has not been used for the longest period of time is replaced.</p>
+                <ul class="algo-list">
+                    <li>Very good performance in practice.</li>
+                    <li>Requires complex hardware support (counters, timestamps) to track usage.</li>
+                    <li>High implementation overhead.</li>
+                </ul>
+            </div>
+            <div class="algo-card">
+                <div class="algo-title">Optimal (MIN)</div>
+                <span class="algo-pill">Perfect Prediction</span>
+                <p>This is a theoretical algorithm. The page chosen for replacement is the one that will not be used for the longest period of time in the future.</p>
+                <ul class="algo-list">
+                    <li>Yields the lowest possible page fault rate.</li>
+                    <li>Cannot be implemented in a real operating system.</li>
+                    <li>Used as a benchmark to compare real-world algorithms.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="about-footer">
+      <span>Interactive Page Replacement Lab - Simulated by Gemini</span>
+      <span class="about-name">OS Concepts Visualizer</span>
+    </div>
+  </footer>
+
+<script>
+    // Constants for default simulation
+    const SAMPLE_REF_STRING = "7 0 1 2 0 3 0 4 2 3 0 3 2";
+    const DEFAULT_FRAMES = 3;
+
+    // DOM Elements
+    const numFramesInput = document.getElementById('num-frames');
+    const refStringTextarea = document.getElementById('reference-string');
+    const algorithmSelect = document.getElementById('algorithm');
+    const errorDisplay = document.getElementById('error-message');
+    const tableContainer = document.getElementById('visualization-table-container');
+
+    // Status/Metric Elements
+    const statusAlgo = document.getElementById('status-chip-algo');
+    const statusFrames = document.getElementById('status-chip-frames');
+    const statusRequests = document.getElementById('status-chip-requests');
+    const metricFaults = document.getElementById('metric-faults');
+    const metricHits = document.getElementById('metric-hits');
+    const metricHitRatio = document.getElementById('metric-hit-ratio');
+    const metricMissRatio = document.getElementById('metric-miss-ratio');
+    const visualizationTitle = document.getElementById('visualization-title');
+    const refStringDisplay = document.getElementById('reference-string-display');
+
+    // Utility function to process the raw input string into an array of page numbers
+    function parseReferenceString(rawString) {
+        // Replace all non-digit, non-space characters with a single space, then split by spaces.
+        // Filter out empty strings that might result from multiple spaces or leading/trailing separators.
+        const cleanedString = rawString.replace(/[^0-9\s]/g, ' ');
+        const pages = cleanedString.split(/\s+/)
+            .filter(p => p.length > 0)
+            .map(p => parseInt(p, 10));
+
+        // Validation: ensure all pages are valid numbers
+        if (pages.some(isNaN)) {
+            throw new Error("Reference string contains non-numeric values.");
+        }
+        if (pages.length === 0) {
+            throw new Error("Reference string cannot be empty.");
+        }
+        return pages;
+    }
+
+    // Displays error message to the user
+    function displayError(message) {
+        errorDisplay.textContent = message;
+        // Also clear previous results
+        tableContainer.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">Simulation failed. Please check your inputs.</p>';
+        updateMetrics(0, 0, 'N/A', 0); // Reset metrics
+    }
+
+    // Clears the entire simulation area and resets inputs
+    function clearResults() {
+        numFramesInput.value = DEFAULT_FRAMES;
+        refStringTextarea.value = SAMPLE_REF_STRING;
+        algorithmSelect.value = 'FIFO';
+        errorDisplay.textContent = '';
+        tableContainer.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">Run a simulation to see the results here.</p>';
+        updateMetrics(0, 0, 'N/A', 0);
+        
+        // Reset status chips
+        statusAlgo.textContent = 'Algorithm: N/A';
+        statusFrames.textContent = 'Frames: 0';
+        statusRequests.textContent = 'Requests: 0';
+        visualizationTitle.textContent = 'Algorithm: N/A | Frames: 0';
+        refStringDisplay.textContent = 'Reference String: N/A';
+    }
+
+    // Loads the default sample data
+    function loadSample() {
+        refStringTextarea.value = SAMPLE_REF_STRING;
+        numFramesInput.value = DEFAULT_FRAMES;
+        algorithmSelect.value = 'FIFO';
+        errorDisplay.textContent = 'Sample loaded. Press "Run Simulation".';
+    }
+
+    // Updates the metrics and status chips on the UI
+    function updateMetrics(totalRequests, faults, algorithm, numFrames) {
+        const hits = totalRequests - faults;
+        const hitRatio = totalRequests > 0 ? (hits / totalRequests * 100).toFixed(2) : '0.00';
+        const missRatio = totalRequests > 0 ? (faults / totalRequests * 100).toFixed(2) : '0.00';
+        
+        // Update Metrics
+        metricFaults.textContent = faults;
+        metricHits.textContent = hits;
+        metricHitRatio.textContent = `${hitRatio}%`;
+        metricMissRatio.textContent = `${missRatio}%`;
+
+        // Update Status Chips
+        statusAlgo.textContent = `Algorithm: ${algorithm}`;
+        statusFrames.textContent = `Frames: ${numFrames}`;
+        statusRequests.textContent = `Requests: ${totalRequests}`;
+        visualizationTitle.textContent = `Algorithm: ${algorithm} | Frames: ${numFrames}`;
+        refStringDisplay.textContent = `Reference String: ${refStringTextarea.value.slice(0, 60)}...`;
+
+        // Apply visual feedback to metric pills
+        document.querySelector('.metric-card:nth-child(1) .metric-pill').className = `metric-pill ${faults > 0 ? 'metric-pill-bad' : ''}`;
+        document.querySelector('.metric-card:nth-child(2) .metric-pill').className = `metric-pill ${hits > 0 ? 'metric-pill-good' : ''}`;
+        document.querySelector('.metric-card:nth-child(3) .metric-pill').className = `metric-pill ${parseFloat(hitRatio) >= 50 ? 'metric-pill-good' : ''}`;
+        document.querySelector('.metric-card:nth-child(4) .metric-pill').className = `metric-pill ${parseFloat(missRatio) >= 50 ? 'metric-pill-bad' : ''}`;
+    }
+
+    // Renders the entire simulation history into the HTML table
+    function renderVisualization(history, numFrames) {
+        let html = '<table>';
+
+        // Header (Reference String Row)
+        html += '<thead><tr><th>Frame</th>';
+        history.forEach((step, index) => {
+            html += `<th title="Request Index: ${index}">P: ${step.page}</th>`;
+        });
+        html += '</tr></thead>';
+
+        // Body (Frame Rows)
+        html += '<tbody>';
+        // Iterate through each frame index
+        for (let i = 0; i < numFrames; i++) {
+            html += `<tr><td>F${i + 1}</td>`;
+            history.forEach(step => {
+                const pageInFrame = step.frames[i] !== null ? step.frames[i] : '';
+                // Highlight the cell if it's a fault AND this specific cell was changed
+                const isFaultAndChanged = step.isFault && (step.replacedFrameIndex === i || (step.frames[i] === step.page && step.replacedFrameIndex === null));
+                const isHit = !step.isFault && pageInFrame === step.page;
+
+                let cellClass = '';
+                if (isFaultAndChanged) {
+                    cellClass = 'cell-fault';
+                } else if (isHit) {
+                    cellClass = 'cell-hit';
+                }
+
+                html += `<td class="${cellClass}">${pageInFrame}</td>`;
+            });
+            html += '</tr>';
+        }
+
+        // Footer (Hit/Fault Row)
+        html += '<tr><td>Result</td>';
+        history.forEach(step => {
+            const tag = step.isFault 
+                ? `<span class="tag-fault">Fault</span>`
+                : `<span class="tag-hit">Hit</span>`;
+            html += `<td>${tag}</td>`;
+        });
+        html += '</tr>';
+
+        html += '</tbody></table>';
+        tableContainer.innerHTML = html;
+    }
+
+    // =================================================================
+    // CORE ALGORITHMS
+    // =================================================================
+
+    function runFIFO(refString, numFrames) {
+        let frames = Array(numFrames).fill(null);
+        let faults = 0;
+        let fifoPointer = 0; // Index of the page that has been in memory the longest
+        let history = [];
+
+        refString.forEach(page => {
+            let isFault = true;
+            let replacedFrameIndex = null;
+            const pageIndex = frames.indexOf(page);
+
+            if (pageIndex !== -1) {
+                // HIT: Page is already in memory
+                isFault = false;
+            } else {
+                // FAULT: Page not found
+                faults++;
+
+                // 1. Check for empty frame (initial loading)
+                const emptyIndex = frames.indexOf(null);
+                if (emptyIndex !== -1) {
+                    frames[emptyIndex] = page;
+                    replacedFrameIndex = emptyIndex;
+                    // No need to advance fifoPointer yet, as we haven't used all frames.
+                } else {
+                    // 2. Frames are full, perform replacement using FIFO pointer
+                    replacedFrameIndex = fifoPointer;
+                    frames[fifoPointer] = page;
+                    // Move pointer to the next frame for the next replacement
+                    fifoPointer = (fifoPointer + 1) % numFrames;
+                }
+            }
+
+            // Record the state
+            history.push({
+                page: page,
+                frames: [...frames],
+                isFault: isFault,
+                replacedFrameIndex: replacedFrameIndex
+            });
+        });
+
+        return { faults, history };
+    }
+
+    function runLRU(refString, numFrames) {
+        let frames = Array(numFrames).fill(null);
+        let faults = 0;
+        let lastUsed = new Map(); // Key: page, Value: index (timestamp/time of last use)
+        let history = [];
+
+        refString.forEach((page, requestIndex) => {
+            let isFault = true;
+            let replacedFrameIndex = null;
+            const pageIndex = frames.indexOf(page);
+
+            if (pageIndex !== -1) {
+                // HIT: Page found, update last used time
+                isFault = false;
+                lastUsed.set(page, requestIndex); // Update timestamp
+            } else {
+                // FAULT: Page not found
+                faults++;
+
+                // 1. Check for empty frame
+                const emptyIndex = frames.indexOf(null);
+                if (emptyIndex !== -1) {
+                    frames[emptyIndex] = page;
+                    lastUsed.set(page, requestIndex);
+                    replacedFrameIndex = emptyIndex;
+                } else {
+                    // 2. Frames are full, perform LRU replacement
+                    let lruPage = null;
+                    let minTime = Infinity;
+
+                    frames.forEach(p => {
+                        const time = lastUsed.get(p);
+                        if (time < minTime) {
+                            minTime = time;
+                            lruPage = p;
+                        }
+                    });
+
+                    // Replace the LRU page
+                    replacedFrameIndex = frames.indexOf(lruPage);
+                    frames[replacedFrameIndex] = page;
+                    lastUsed.delete(lruPage);
+                    lastUsed.set(page, requestIndex);
+                }
+            }
+
+            // Record the state
+            history.push({
+                page: page,
+                frames: [...frames],
+                isFault: isFault,
+                replacedFrameIndex: replacedFrameIndex
+            });
+        });
+
+        return { faults, history };
+    }
+
+
+    function runOptimal(refString, numFrames) {
+        let frames = Array(numFrames).fill(null);
+        let faults = 0;
+        let history = [];
+
+        refString.forEach((page, requestIndex) => {
+            let isFault = true;
+            let replacedFrameIndex = null;
+            const pageIndex = frames.indexOf(page);
+
+            if (pageIndex !== -1) {
+                // HIT: Page found
+                isFault = false;
+            } else {
+                // FAULT: Page not found
+                faults++;
+
+                // 1. Check for empty frame
+                const emptyIndex = frames.indexOf(null);
+                if (emptyIndex !== -1) {
+                    frames[emptyIndex] = page;
+                    replacedFrameIndex = emptyIndex;
+                } else {
+                    // 2. Frames are full, perform OPTIMAL replacement
+                    let pageToReplace = null;
+                    let maxFutureIndex = -1;
+                    
+                    frames.forEach(currentPage => {
+                        // Find the next time this page will be used
+                        let nextUseIndex = refString.slice(requestIndex + 1).indexOf(currentPage);
+                        
+                        // If not found, set to infinity (or a large number greater than string length)
+                        if (nextUseIndex === -1) {
+                            nextUseIndex = refString.length + 1;
+                        } else {
+                            // Convert relative index to absolute index for comparison
+                            nextUseIndex += requestIndex + 1;
+                        }
+
+                        if (nextUseIndex > maxFutureIndex) {
+                            maxFutureIndex = nextUseIndex;
+                            pageToReplace = currentPage;
+                        }
+                    });
+
+                    // Replace the Optimal page
+                    replacedFrameIndex = frames.indexOf(pageToReplace);
+                    frames[replacedFrameIndex] = page;
+                }
+            }
+
+            // Record the state
+            history.push({
+                page: page,
+                frames: [...frames],
+                isFault: isFault,
+                replacedFrameIndex: replacedFrameIndex
+            });
+        });
+
+        return { faults, history };
+    }
+
+    // =================================================================
+    // MAIN ENTRY POINT
+    // =================================================================
+
+    function simulate() {
+        errorDisplay.textContent = ''; // Clear previous errors
+
+        const numFrames = parseInt(numFramesInput.value, 10);
+        const algorithm = algorithmSelect.value;
+        const rawRefString = refStringTextarea.value;
+        let refString;
+
+        // Input Validation
+        try {
+            if (isNaN(numFrames) || numFrames < 1 || numFrames > 10) {
+                throw new Error("Number of frames must be between 1 and 10.");
+            }
+            refString = parseReferenceString(rawRefString);
+
+        } catch (e) {
+            displayError(e.message);
+            return;
+        }
+
+        let results;
+        
+        // Execute the selected algorithm
+        switch (algorithm) {
+            case 'FIFO':
+                results = runFIFO(refString, numFrames);
+                break;
+            case 'LRU':
+                results = runLRU(refString, numFrames);
+                break;
+            case 'OPTIMAL':
+                results = runOptimal(refString, numFrames);
+                break;
+            default:
+                displayError("Invalid algorithm selected.");
+                return;
+        }
+
+        // Render results
+        renderVisualization(results.history, numFrames);
+        updateMetrics(refString.length, results.faults, algorithm, numFrames);
+        errorDisplay.textContent = `Simulation complete! Algorithm: ${algorithm}. Total Faults: ${results.faults}.`;
+    }
+
+    // Initialize with sample data on load
+    window.onload = () => {
+        simulate();
+    };
+
+</script>
+</body>
+</html>
